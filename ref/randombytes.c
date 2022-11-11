@@ -17,8 +17,23 @@
 #include <unistd.h>
 #endif
 #endif
+#ifdef RANDOMBYTES_SEED
+#include "fips202.h"
+#endif
 
-#ifdef _WIN32
+#ifdef RANDOMBYTES_SEED
+void randombytes(uint8_t *out, size_t outlen) {
+  static uint8_t firstrun = 1;
+  static keccak_state state;
+  if (firstrun) {
+    shake256_init(&state);
+    shake256_absorb(&state, (uint8_t*) RANDOMBYTES_SEED, sizeof(RANDOMBYTES_SEED));
+    shake256_finalize(&state);
+    firstrun = 0;
+  }
+  shake256_squeeze(out, outlen, &state);
+}
+#elif defined(_WIN32)
 void randombytes(uint8_t *out, size_t outlen) {
   HCRYPTPROV ctx;
   size_t len;
