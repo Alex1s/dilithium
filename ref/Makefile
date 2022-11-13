@@ -10,10 +10,6 @@ KECCAK_HEADERS = $(HEADERS) fips202.h
 AES_SOURCES = $(SOURCES) fips202.c aes256ctr.c symmetric-aes.c
 AES_HEADERS = $(HEADERS) fips202.h aes256ctr.h
 
-ifneq ($(RANDOMBYTES_SEED),)
-RANDOMBYTES_OPTION = -DRANDOMBYTES_SEED=\"$(RANDOMBYTES_SEED)\"
-endif
-
 .PHONY: all speed shared clean
 
 all: \
@@ -54,13 +50,6 @@ shared: \
   libpqcrystals_dilithium5aes_ref.so \
   libpqcrystals_fips202_ref.so \
   libpqcrystals_aes256ctr_ref.so
-  libpqcrystals_randombytes_ref.so
-
-dump_params: dump_params.c
-	$(CC) dump_params.c -DDILITHIUM_MODE=$(DILITHIUM_MODE) -o dump_params
-
-libpqcrystals_randombytes_ref.so: randombytes.c randombytes.h
-	$(CC) -shared -fPIC $(CFLAGS) $(RANDOMBYTES_OPTION) -o $@ $<
 
 libpqcrystals_fips202_ref.so: fips202.c fips202.h
 	$(CC) -shared -fPIC $(CFLAGS) -o $@ $<
@@ -233,7 +222,6 @@ clean:
 	rm -f libpqcrystals_dilithium5aes_ref.so
 	rm -f libpqcrystals_fips202_ref.so
 	rm -f libpqcrystals_aes256ctr_ref.so
-	rm -f libpqcrystals_randombytes_ref.so
 	rm -f test/test_dilithium2
 	rm -f test/test_dilithium3
 	rm -f test/test_dilithium5
@@ -259,4 +247,3 @@ clean:
 	rm -f PQCgenKAT_sign2aes
 	rm -f PQCgenKAT_sign3aes
 	rm -f PQCgenKAT_sign5aes
-	rm -f dump_params
