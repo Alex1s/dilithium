@@ -21,6 +21,9 @@
 #include "fips202.h"
 #endif
 
+#define STR_(X) #X
+#define STR(X) STR_(X)
+
 #ifdef RANDOMBYTES_SEED
 void randombytes(uint8_t *out, size_t outlen) {
   static uint8_t firstrun = 1;
