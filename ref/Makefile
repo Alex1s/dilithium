@@ -54,6 +54,7 @@ shared: \
   libpqcrystals_dilithium5aes_ref.so \
   libpqcrystals_fips202_ref.so \
   libpqcrystals_aes256ctr_ref.so
+  libpqcrystals_randombytes_ref.so
 
 dump_params: dump_params.c
 	$(CC) dump_params.c -DDILITHIUM_MODE=$(DILITHIUM_MODE) -o dump_params
