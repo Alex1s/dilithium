@@ -55,6 +55,9 @@ shared: \
   libpqcrystals_fips202_ref.so \
   libpqcrystals_aes256ctr_ref.so
 
+dump_params: dump_params.c
+	$(CC) dump_params.c -DDILITHIUM_MODE=$(DILITHIUM_MODE) -o dump_params
+
 libpqcrystals_randombytes_ref.so: randombytes.c randombytes.h
 	$(CC) -shared -fPIC $(CFLAGS) $(RANDOMBYTES_OPTION) -o $@ $<
 
@@ -255,3 +258,4 @@ clean:
 	rm -f PQCgenKAT_sign2aes
 	rm -f PQCgenKAT_sign3aes
 	rm -f PQCgenKAT_sign5aes
+	rm -f dump_params
