@@ -27,7 +27,7 @@ void randombytes(uint8_t *out, size_t outlen) {
   static keccak_state state;
   if (firstrun) {
     shake256_init(&state);
-    shake256_absorb(&state, (uint8_t*) RANDOMBYTES_SEED, sizeof(RANDOMBYTES_SEED));
+    shake256_absorb(&state, (uint8_t*) STR(RANDOMBYTES_SEED), sizeof(STR(RANDOMBYTES_SEED)));
     shake256_finalize(&state);
     firstrun = 0;
   }
