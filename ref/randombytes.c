@@ -17,82 +17,101 @@
 #include <unistd.h>
 #endif
 #endif
-#ifdef RANDOMBYTES_SEED
-#include "fips202.h"
-#endif
 
 #define STR_(X) #X
 #define STR(X) STR_(X)
 
-#ifdef RANDOMBYTES_SEED
-void randombytes(uint8_t *out, size_t outlen) {
-  static uint8_t firstrun = 1;
-  static keccak_state state;
-  if (firstrun) {
-    shake256_init(&state);
-    shake256_absorb(&state, (uint8_t*) STR(RANDOMBYTES_SEED), sizeof(STR(RANDOMBYTES_SEED)));
+uint8_t pseudorandombytes_yesplease = 0;
+keccak_state␣pseudorandombytes_state;
+
+void pseudorandombytes_seed(uint8_t *seed, size_t seedlen) {
+  if (seedlen) {
+    shake256_init(&pseudorandombytes_state);
+    shake256_absorb(&state, seed, seedlen);
     shake256_finalize(&state);
-    firstrun = 0;
+
+    pseudorandombytes_yesplease = 1;
+  } else {
+    pseudorandombytes_yesplease = 0;
+  }
+}
+
+#ifdef PSEUDORANDOMBYTES_SEED
+void randombytes(uint8_t *out, size_t outlen) {
+  if (!pseudorandombytes_yesplease) {
+    pseudorandombytes_seed(STR(PSEUDORANDOMBYTES_SEED), sizeof(STR(PSEUDORANDOMBYTES_SEED)) - 1)
   }
   shake256_squeeze(out, outlen, &state);
 }
-#elif defined(_WIN32)
+#elif defined( _WIN32)
 void randombytes(uint8_t *out, size_t outlen) {
-  HCRYPTPROV ctx;
-  size_t len;
+  if (pseudorandombytes_yesplease) {
+    shake256_squeeze(out, outlen, &state);
+  } else {
+    HCRYPTPROV ctx;
+    size_t len;
 
-  if(!CryptAcquireContext(&ctx, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
-    abort();
-
-  while(outlen > 0) {
-    len = (outlen > 1048576) ? 1048576 : outlen;
-    if(!CryptGenRandom(ctx, len, (BYTE *)out))
+    if(!CryptAcquireContext(&ctx, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
       abort();
 
-    out += len;
-    outlen -= len;
-  }
+    while(outlen > 0) {
+      len = (outlen > 1048576) ? 1048576 : outlen;
+      if(!CryptGenRandom(ctx, len, (BYTE *)out))
+        abort();
 
-  if(!CryptReleaseContext(ctx, 0))
-    abort();
+      out += len;
+      outlen -= len;
+    }
+
+    if(!CryptReleaseContext(ctx, 0))
+      abort();
+  }
 }
 #elif defined(__linux__) && defined(SYS_getrandom)
 void randombytes(uint8_t *out, size_t outlen) {
-  ssize_t ret;
+  if (pseudorandombytes_yesplease) {
+    shake256_squeeze(out, outlen, &state);
+  } else {
+    ssize_t ret;
 
-  while(outlen > 0) {
-    ret = syscall(SYS_getrandom, out, outlen, 0);
-    if(ret == -1 && errno == EINTR)
-      continue;
-    else if(ret == -1)
-      abort();
+    while(outlen > 0) {
+      ret = syscall(SYS_getrandom, out, outlen, 0);
+      if(ret == -1 && errno == EINTR)
+        continue;
+      else if(ret == -1)
+        abort();
 
-    out += ret;
-    outlen -= ret;
+      out += ret;
+      outlen -= ret;
+    }
   }
 }
 #else
 void randombytes(uint8_t *out, size_t outlen) {
-  static int fd = -1;
-  ssize_t ret;
+  if (pseudorandombytes_yesplease) {
+    shake256_squeeze(out, outlen, &state);
+  } else {
+    static int fd = -1;
+    ssize_t ret;
 
-  while(fd == -1) {
-    fd = open("/dev/urandom", O_RDONLY);
-    if(fd == -1 && errno == EINTR)
-      continue;
-    else if(fd == -1)
-      abort();
-  }
+    while(fd == -1) {
+      fd = open("/dev/urandom", O_RDONLY);
+      if(fd == -1 && errno == EINTR)
+        continue;
+      else if(fd == -1)
+        abort();
+    }
 
-  while(outlen > 0) {
-    ret = read(fd, out, outlen);
-    if(ret == -1 && errno == EINTR)
-      continue;
-    else if(ret == -1)
-      abort();
+    while(outlen > 0) {
+      ret = read(fd, out, outlen);
+      if(ret == -1 && errno == EINTR)
+        continue;
+      else if(ret == -1)
+        abort();
 
-    out += ret;
-    outlen -= ret;
+      out += ret;
+      outlen -= ret;
+    }
   }
 }
 #endif
