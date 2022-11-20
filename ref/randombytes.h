@@ -2,7 +2,6 @@
 #define RANDOMBYTES_H
 
 #define MAX_SEED_LEN (512)
-#ifdef 
 
 #include <stddef.h>
 #include <stdint.h>
