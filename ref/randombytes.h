@@ -8,6 +8,6 @@
 #include "fips202.h"
 
 void randombytes(uint8_t *out, size_t outlen);
-void pseudorandombytes_seed(uint8_t seed, size_t seedlen);
+void pseudorandombytes_seed(uint8_t *seed, size_t seedlen);
 
 #endif
