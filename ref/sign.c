@@ -91,6 +91,13 @@ int crypto_sign_signature(uint8_t *sig,
   polyveck t0, s2, w1, w0, h;
   poly cp;
   keccak_state state;
+  unsigned int i;
+  unsigned int j;
+
+  /* Memory is initialized with zero. */
+  for(i = 0; i < L; ++i)
+    for(j = 0; j < N; ++j)
+      y.vec[i].coeffs[j] = 0;
 
   rho = seedbuf;
   tr = rho + SEEDBYTES;
