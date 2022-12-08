@@ -5,7 +5,9 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "symmetric.h"
+#ifdef SS_VER
 #include "hal.h"
+#endif
 
 #ifdef DBENCH
 #include "test/cpucycles.h"
@@ -828,7 +830,9 @@ void polyz_pack(uint8_t *r, const poly *a) {
 void polyz_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
   DBENCH_START();
+#ifdef SS_VER
   trigger_high();
+#endif
 
 #if GAMMA1 == (1 << 17)
   for(i = 0; i < N/4; ++i) {
@@ -874,7 +878,9 @@ void polyz_unpack(poly *r, const uint8_t *a) {
   }
 #endif
 
+#ifdef SS_VER
   trigger_low();
+#endif
   DBENCH_STOP(*tpack);
 }
 
