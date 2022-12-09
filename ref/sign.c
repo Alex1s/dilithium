@@ -128,6 +128,10 @@ int crypto_sign_signature(uint8_t *sig,
 rej:
   /* Sample intermediate vector y */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
+#ifdef SHUFFLE
+  /* Shuffle intermediate vector y */
+  polyvecl_shuffle(&y, rhoprime, nonce + 10); // is that a good seed and nonce?
+#endif
 
   /* Matrix-vector multiplication */
   z = y;

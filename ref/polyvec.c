@@ -2,6 +2,8 @@
 #include "params.h"
 #include "polyvec.h"
 #include "poly.h"
+#include "randombytes.h"
+#include "symmetric.h"
 
 /*************************************************
 * Name:        expand_mat
@@ -145,6 +147,35 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
       return 1;
 
   return 0;
+}
+
+#define POLYVECL_SHUFFLE_NBLOCKS (((N * L * 2) / STREAM256_BLOCKBYTES) + 1) // too much most likely
+void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
+  uint8_t current_poly_index, current_coeff_index;
+  uint8_t random_poly_index, random_coeff_index;
+  int32_t tmp;
+  unsigned int i, buf_i;
+  stream256_state state;
+  uint8_t buf[POLYVECL_SHUFFLE_NBLOCKS * STREAM256_BLOCKBYTES];
+
+  stream256_init(&state, seed, nonce);
+  stream256_squeezeblocks(buf, POLYVECL_SHUFFLE_NBLOCKS, &state);
+
+  buf_i = 0;
+  for(i = L * N - 1; i > 0; --i) {
+    // upper bounds
+    current_poly_index = i >> 8;
+    current_coeff_index = i & 0xFF;
+
+    // sample
+    random_poly_index = buf[buf_i++] % (current_poly_index + 1U); // biased, I know ...
+    random_coeff_index = buf[buf_i++] % (current_coeff_index + 1U); // biased, I know ...
+
+    // swap
+    tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
+    v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
+    v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
+  }
 }
 
 /**************************************************************/
