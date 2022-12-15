@@ -149,27 +149,50 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
   return 0;
 }
 
+static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, uint8_t max) {
+  uint8_t res;
+  unsigned int shift;
+  uint8_t mask = 0;
+
+  for(shift = 8; shift >= 1; --shift) {
+    if(max & (1 << (shift - 1))) {
+      mask = (1 << shift) - 1;
+      break;
+    }
+  }
+
+  do {
+    if(*i >= STREAM256_BLOCKBYTES) {
+      stream256_squeezeblocks(buf, 1, state);
+      *i = 0;
+    }
+    res = buf[(*i)++];
+    res &= mask;
+  } while(res > max);
+
+  return res;
+}
+
 #define POLYVECL_SHUFFLE_NBLOCKS (((N * L * 2) / STREAM256_BLOCKBYTES) + 1) // too much most likely
 void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   uint8_t current_poly_index, current_coeff_index;
   uint8_t random_poly_index, random_coeff_index;
   int32_t tmp;
-  unsigned int i, buf_i;
+  unsigned int i, buf_i = 0;
   stream256_state state;
   uint8_t buf[POLYVECL_SHUFFLE_NBLOCKS * STREAM256_BLOCKBYTES];
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, POLYVECL_SHUFFLE_NBLOCKS, &state);
 
-  buf_i = 0;
   for(i = L * N - 1; i > 0; --i) {
     // upper bounds
     current_poly_index = i >> 8;
     current_coeff_index = i & 0xFF;
 
     // sample
-    random_poly_index = buf[buf_i++] % (current_poly_index + 1U); // biased, I know ...
-    random_coeff_index = buf[buf_i++] % (current_coeff_index + 1U); // biased, I know ...
+    random_poly_index = rej_uint8(buf, &buf_i, &state, current_poly_index);
+    random_coeff_index = rej_uint8(buf, &buf_i, &state, current_coeff_index);
 
     // swap
     tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
