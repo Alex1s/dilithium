@@ -173,17 +173,16 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
   return res;
 }
 
-#define POLYVECL_SHUFFLE_NBLOCKS (((N * L * 2) / STREAM256_BLOCKBYTES) + 1) // too much most likely
 void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   uint8_t current_poly_index, current_coeff_index;
   uint8_t random_poly_index, random_coeff_index;
   int32_t tmp;
   unsigned int i, buf_i = 0;
   stream256_state state;
-  uint8_t buf[POLYVECL_SHUFFLE_NBLOCKS * STREAM256_BLOCKBYTES];
+  uint8_t buf[STREAM256_BLOCKBYTES];
 
   stream256_init(&state, seed, nonce);
-  stream256_squeezeblocks(buf, POLYVECL_SHUFFLE_NBLOCKS, &state);
+  stream256_squeezeblocks(buf, 1, &state);
 
   for(i = L * N - 1; i > 0; --i) {
     // upper bounds
