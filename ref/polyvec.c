@@ -185,14 +185,19 @@ void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce)
 
   for(current_poly_index = L - 1; current_poly_index-- > 0; ) {
     for(current_coeff_index = N - 1; current_coeff_index-- > 0; ) {
-      // sample
-      random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
-      random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
+      if(current_poly_index != 0 && current_coeff_index != 0) {
+        // sample
+        rej_uint8(buf, &i, &state, current_poly_index);
+        random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
+        random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
 
-      // swap
-      tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
-      v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
-      v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
+        if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) {
+          // swap
+          tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
+          v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
+          v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
+        }
+      }
     }
   }
 }
