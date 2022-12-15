@@ -154,9 +154,9 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
   unsigned int shift;
   uint8_t mask = 0;
 
-  for(shift = 8; shift >= 1; --shift) {
-    if(max & (1 << (shift - 1))) {
-      mask = (1 << shift) - 1;
+  for(shift = 7; shift-- > 0; ) {
+    if(max & (1 << shift)) {
+      mask = (1 << (shift + 1)) - 1;
       break;
     }
   }
@@ -174,29 +174,26 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
 }
 
 void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
-  uint8_t current_poly_index, current_coeff_index;
+  unsigned int current_poly_index, current_coeff_index, i = 0;
   uint8_t random_poly_index, random_coeff_index;
   int32_t tmp;
-  unsigned int i, buf_i = 0;
-  stream256_state state;
   uint8_t buf[STREAM256_BLOCKBYTES];
+  stream256_state state;
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, 1, &state);
 
-  for(i = L * N - 1; i > 0; --i) {
-    // upper bounds
-    current_poly_index = i >> 8;
-    current_coeff_index = i & 0xFF;
+  for(current_poly_index = L - 1; current_poly_index-- > 0; ) {
+    for(current_coeff_index = N - 1; current_coeff_index-- > 0; ) {
+      // sample
+      random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
+      random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
 
-    // sample
-    random_poly_index = rej_uint8(buf, &buf_i, &state, current_poly_index);
-    random_coeff_index = rej_uint8(buf, &buf_i, &state, current_coeff_index);
-
-    // swap
-    tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
-    v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
-    v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
+      // swap
+      tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
+      v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
+      v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
+    }
   }
 }
 
