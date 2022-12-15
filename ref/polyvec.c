@@ -183,15 +183,13 @@ void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce)
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, 1, &state);
 
-  for(current_poly_index = L - 1; current_poly_index-- > 0; ) {
-    for(current_coeff_index = N - 1; current_coeff_index-- > 0; ) {
-      if(current_poly_index != 0 && current_coeff_index != 0) {
+  for(current_poly_index = L - 1; current_poly_index-- > 0; ) { // L - 1, ..., 0
+    for(current_coeff_index = N - 1; current_coeff_index-- > 0; ) { // N - 1, ..., 0
+      if(current_poly_index != 0 || current_coeff_index != 0) { // skip last iteration which would swap y.vec[0].coeffs[0] with y.vec[0].coeffs[0]
         // sample
-        rej_uint8(buf, &i, &state, current_poly_index);
         random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
         random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
-
-        if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) {
+        if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y and thus we can skip this "swap"
           // swap
           tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
           v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
