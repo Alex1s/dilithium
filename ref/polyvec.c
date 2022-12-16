@@ -149,12 +149,12 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
   return 0;
 }
 
-static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, uint8_t max) {
-  uint8_t res;
+static uint16_t rej_uint16(uint8_t *buf, unsigned int *i, stream256_state *state, uint16_t max) {
+  uint16_t res;
   unsigned int shift;
-  uint8_t mask = 0;
+  uint16_t mask = 0;
 
-  for(shift = 7; shift-- > 0; ) {
+  for(shift = 15; shift-- > 0; ) {
     if(max & (1 << shift)) {
       mask = (1 << (shift + 1)) - 1;
       break;
@@ -162,11 +162,22 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
   }
 
   do {
+    if(max > 0xFF) {
+      if(*i >= STREAM256_BLOCKBYTES) {
+        stream256_squeezeblocks(buf, 1, state);
+        *i = 0;
+      }
+      res = buf[(*i)++] << 8;
+    } else {
+      res = 0;
+    }
+
     if(*i >= STREAM256_BLOCKBYTES) {
       stream256_squeezeblocks(buf, 1, state);
       *i = 0;
     }
-    res = buf[(*i)++];
+    res |= buf[(*i)++];
+
     res &= mask;
   } while(res > max);
 
@@ -176,6 +187,7 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
 void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int current_poly_index, current_coeff_index, i = 0;
   uint8_t random_poly_index, random_coeff_index;
+  uint16_t random_flattened_index;
   int32_t tmp_random, tmp_current;
   uint8_t buf[STREAM256_BLOCKBYTES];
   stream256_state state;
@@ -186,9 +198,11 @@ void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce)
   for(current_poly_index = L; current_poly_index-- > 0; ) { // L - 1, ..., 0
     for(current_coeff_index = N; current_coeff_index-- > 0; ) { // N - 1, ..., 0
       // sample
-      random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
-      random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
-      if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y and thus we can skip this "swap"
+      random_flattened_index = rej_uint16(buf, &i, &state, current_poly_index * N + current_coeff_index);
+      random_poly_index = random_flattened_index / N;
+      random_coeff_index = random_flattened_index % N;
+
+      if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y, and thus we can skip this "swap"
         // swap
         tmp_random = v->vec[random_poly_index].coeffs[random_coeff_index];
         tmp_current = v->vec[current_poly_index].coeffs[current_coeff_index];
