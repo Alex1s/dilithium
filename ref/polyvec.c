@@ -176,25 +176,24 @@ static uint8_t rej_uint8(uint8_t *buf, unsigned int *i, stream256_state *state, 
 void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int current_poly_index, current_coeff_index, i = 0;
   uint8_t random_poly_index, random_coeff_index;
-  int32_t tmp;
+  int32_t tmp_random, tmp_current;
   uint8_t buf[STREAM256_BLOCKBYTES];
   stream256_state state;
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, 1, &state);
 
-  for(current_poly_index = L - 1; current_poly_index-- > 0; ) { // L - 1, ..., 0
-    for(current_coeff_index = N - 1; current_coeff_index-- > 0; ) { // N - 1, ..., 0
-      if(current_poly_index != 0 || current_coeff_index != 0) { // skip last iteration which would swap y.vec[0].coeffs[0] with y.vec[0].coeffs[0]
-        // sample
-        random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
-        random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
-        if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y and thus we can skip this "swap"
-          // swap
-          tmp = v->vec[random_poly_index].coeffs[random_coeff_index];
-          v->vec[random_poly_index].coeffs[random_coeff_index] = v->vec[current_poly_index].coeffs[current_coeff_index];
-          v->vec[current_poly_index].coeffs[current_coeff_index] = tmp;
-        }
+  for(current_poly_index = L; current_poly_index-- > 0; ) { // L - 1, ..., 0
+    for(current_coeff_index = N; current_coeff_index-- > 0; ) { // N - 1, ..., 0
+      // sample
+      random_poly_index = rej_uint8(buf, &i, &state, current_poly_index);
+      random_coeff_index = rej_uint8(buf, &i, &state, current_coeff_index);
+      if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y and thus we can skip this "swap"
+        // swap
+        tmp_random = v->vec[random_poly_index].coeffs[random_coeff_index];
+        tmp_current = v->vec[current_poly_index].coeffs[current_coeff_index];
+        v->vec[random_poly_index].coeffs[random_coeff_index] = tmp_current;
+        v->vec[current_poly_index].coeffs[current_coeff_index] = tmp_random;
       }
     }
   }
