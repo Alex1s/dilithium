@@ -2,7 +2,6 @@
 #include "params.h"
 #include "polyvec.h"
 #include "poly.h"
-#include "randombytes.h"
 #include "symmetric.h"
 
 /*************************************************
