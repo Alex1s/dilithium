@@ -50,7 +50,7 @@ int main(void)
   unsigned int total_zero_counts_per_poly[L] = {0}; // all zero
 
 #ifndef SHUFFLE
-  fprint(stderr, "Shuffling is not activated! This test can only be run if shuffling is activated. Activate shuffling by defining SHUFFLE.\n");
+  fprintf(stderr, "Shuffling is not activated! This test can only be run if shuffling is activated. Activate shuffling by defining SHUFFLE.\n");
   return 1;
 #endif
 
@@ -109,4 +109,6 @@ int main(void)
       return 1;
     }
   }
+
+  printf("If you can read this all shuffling tests have been successful! :-)\n");
 }
