@@ -149,18 +149,21 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
   return 0;
 }
 
+#ifdef SHUFFLE
 static uint16_t rej_uint16(uint8_t *buf, unsigned int *i, stream256_state *state, uint16_t max) {
   uint16_t res;
   unsigned int shift;
   uint16_t mask = 0;
 
-  for(shift = 15; shift-- > 0; ) {
+  // determine required number of random bits
+  for(shift = 16; shift-- > 0; ) { // 15, ..., 0
     if(max & (1 << shift)) {
       mask = (1 << (shift + 1)) - 1;
       break;
     }
   }
 
+  // rejection sample
   do {
     if(max > 0xFF) {
       if(*i >= STREAM256_BLOCKBYTES) {
@@ -202,16 +205,15 @@ void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce)
       random_poly_index = random_flattened_index / N;
       random_coeff_index = random_flattened_index % N;
 
-      if(current_poly_index != random_poly_index || current_coeff_index != random_coeff_index) { // if current and random indices are the same, "swapping" does not alter y, and thus we can skip this "swap"
-        // swap
-        tmp_random = v->vec[random_poly_index].coeffs[random_coeff_index];
-        tmp_current = v->vec[current_poly_index].coeffs[current_coeff_index];
-        v->vec[random_poly_index].coeffs[random_coeff_index] = tmp_current;
-        v->vec[current_poly_index].coeffs[current_coeff_index] = tmp_random;
-      }
+      // swap
+      tmp_random = v->vec[random_poly_index].coeffs[random_coeff_index];
+      tmp_current = v->vec[current_poly_index].coeffs[current_coeff_index];
+      v->vec[random_poly_index].coeffs[random_coeff_index] = tmp_current;
+      v->vec[current_poly_index].coeffs[current_coeff_index] = tmp_random;
     }
   }
 }
+#endif
 
 /**************************************************************/
 /************ Vectors of polynomials of length K **************/
