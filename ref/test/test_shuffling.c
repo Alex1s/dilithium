@@ -1,10 +1,16 @@
 #include <stdio.h>
-#include "../randombytes.h"
 #include "../polyvec.h"
 
+#define TARGET_ITER (2)
+#define COEFFS_PER_ITER (4)
+#define ITERS_SHUFFLE_TEST (1000)
+#define NUM_NON_ZERO_COEFFS (COEFFS_PER_ITER * TARGET_ITER)
+#define NUM_ZERO_COEFFS (N - NUM_NON_ZERO_COEFFS)
+#define EXPECTED_ZEROS_PER_ITER_DOUBLE (ITERS_SHUFFLE_TEST, NUM_ZERO_COEFFS / (double) L)
+
+
 static void print_polyvecl(polyvecl *v) {
-  size_t i;
-  size_t j;
+  uint16_t i, j;
 
   printf("[\n");
   for(i = 0; i < L; i++) {
@@ -24,13 +30,13 @@ static void print_polyvecl(polyvecl *v) {
   printf("]\n");
 }
 
-static uint8_t is_in_polyvecl(polyvecl *v, int32_t needle) {
+static uint8_t is_in_polyvecl(polyvecl *v, int32_t number) {
   size_t i;
   size_t j;
 
   for(i = 0; i < L; ++i)
     for(j = 0; j < N; ++j)
-      if(v->vec[i].coeffs[j] == needle)
+      if(v->vec[i].coeffs[j] == number)
         return 1;
 
   return 0;
@@ -39,21 +45,68 @@ static uint8_t is_in_polyvecl(polyvecl *v, int32_t needle) {
 int main(void)
 {
   uint16_t i, j;
-  polyvecl y;
-  uint8_t seed[CRHBYTES] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+  polyvecl y = {0}; // all zero
+  uint8_t seed[CRHBYTES] = {0}; // all zero
+  unsigned int total_zero_counts_per_poly[L] = {0}; // all zero
+
+#ifndef SHUFFLE
+  fprint(stderr, "Shuffling is not activated! This test can only be run if shuffling is activated. Activate shuffling by defining SHUFFLE.\n");
+  return 1;
+#endif
+
   for(i = 0; i < L; ++i)
     for(j = 0; j < N; ++j)
       y.vec[i].coeffs[j] = i * 1000 + j;
 
-  print_polyvecl(&y);
-  polyvecl_shuffle(&y, seed, 5);
+  printf("y before fault and before shuffle\n");
   print_polyvecl(&y);
 
+  for(j = TARGET_ITER * COEFFS_PER_ITER; j < N; ++j)
+    y.vec[0].coeffs[j] = 0;
+
+  printf("y after fault and before shuffle\n");
+  print_polyvecl(&y);
+
+  printf("y after fault and after shuffle\n");
+  polyvecl_shuffle(&y, seed, 0);
+  print_polyvecl(&y);
+
+  for(i = 0; i < L; ++i) {
+    uint16_t upper = i == 0 ? NUM_NON_ZERO_COEFFS : N;
+    for(j = 0; j < upper; ++j) {
+      if(!is_in_polyvecl(&y, i * 1000 + j)) {
+        fprintf(stderr, "The number %d got shuffled out of the polyvecl! This should never happen!\n", i * 1000 + j);
+        return 1;
+      }
+    }
+  }
+
+  printf("Counting the zeros for each polynomial in the shuffled version of the faulted y vector:\n");
+  for(int iter = 0; iter < ITERS_SHUFFLE_TEST; ++iter) {
+    for(i = 0; i < L; ++i)
+      for(j = 0; j < N; ++j)
+        if(i == 0 && j > 2)
+          y.vec[i].coeffs[j] = 0;
+        else
+          y.vec[i].coeffs[j] = i * 1000 + j;
+
+    polyvecl_shuffle(&y, seed, iter);
+
+    for(i = 0; i < L; ++i)
+      for(j = 0; j < N; ++j)
+        if(y.vec[i].coeffs[j] == 0)
+          total_zero_counts_per_poly[i]++;
+  }
+
+  printf("Average zero count per polynomial over %d runs (we expect %f for every polynomial):\n", ITERS_SHUFFLE_TEST, EXPECTED_ZEROS_PER_ITER_DOUBLE);
+  printf("PS: actually a bit more because of naturally occurring zeros ...\n");
   for(i = 0; i < L; ++i)
-    for(j = 0; j < N; ++j)
-      if(!is_in_polyvecl(&y, i * 1000 + j))
-        fprintf(stderr, "Needle %dl which was at (%hu, %hu) was not found in the shuffled polyvecl\n", i * 1000 + j, i, j);
+    printf("Poly %d: %f\n", i, total_zero_counts_per_poly[i] / (double) (ITERS_SHUFFLE_TEST));
 
-  printf("Shuffling seems to be okay.");
-  return 0;
+  for(i = 0; i < L; ++i) {
+    if(!(EXPECTED_ZEROS_PER_ITER_DOUBLE - 5 < total_zero_counts_per_poly[i] / (double) (ITERS_SHUFFLE_TEST) && total_zero_counts_per_poly[i] / (double) (ITERS_SHUFFLE_TEST) < EXPECTED_ZEROS_PER_ITER_DOUBLE + 5)) {
+      fprintf(stderr, "Poly %d deviates too much from the expected amount of zero coeffs!\n", i);
+      return 1;
+    }
+  }
 }
