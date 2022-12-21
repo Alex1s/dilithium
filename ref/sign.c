@@ -7,6 +7,9 @@
 #include "randombytes.h"
 #include "symmetric.h"
 #include "fips202.h"
+#ifdef SS_VER
+#include "hal.h"
+#endif
 
 /*************************************************
 * Name:        crypto_sign_keypair
