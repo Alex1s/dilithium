@@ -22,7 +22,7 @@ add_library(aes256ctr_ref ${AES256CTR_SRCS})
 # Dilithium 2
 add_library(dilithium2_ref ${DILITHIUM_FIPS202_SRCS})
 add_library(dilithium2aes_ref ${DILITHIUM_AES_SRCS})
-target_compile_definitions(dilithium2_ref PUBLIC DILITHIUM_MODE=2 SHUFFLE)
+target_compile_definitions(dilithium2_ref PUBLIC DILITHIUM_MODE=2 SHUFFLE REJECT_FAULTS)
 target_compile_definitions(dilithium2aes_ref PUBLIC DILITHIUM_MODE=2 DILITHIUM_USE_AES)
 target_link_libraries(dilithium2_ref INTERFACE fips202_ref)
 target_link_libraries(dilithium2aes_ref INTERFACE fips202_ref aes256ctr_ref)

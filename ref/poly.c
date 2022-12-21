@@ -467,7 +467,11 @@ void poly_uniform_eta(poly *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 #define POLY_UNIFORM_GAMMA1_NBLOCKS ((POLYZ_PACKEDBYTES + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
+#ifdef REJECT_FAULTS
+int poly_uniform_gamma1(poly *a,
+#else
 void poly_uniform_gamma1(poly *a,
+#endif
                          const uint8_t seed[CRHBYTES],
                          uint16_t nonce)
 {
@@ -476,7 +480,11 @@ void poly_uniform_gamma1(poly *a,
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1_NBLOCKS, &state);
+#ifdef REJECT_FAULTS
+  return polyz_unpack(a, buf);
+#else
   polyz_unpack(a, buf);
+#endif
 }
 
 /*************************************************
@@ -827,7 +835,11 @@ void polyz_pack(uint8_t *r, const poly *a) {
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const uint8_t *a: byte array with bit-packed polynomial
 **************************************************/
+#ifdef REJECT_FAULTS
+int polyz_unpack(poly *r, const uint8_t *a) {
+#else
 void polyz_unpack(poly *r, const uint8_t *a) {
+#endif
   unsigned int i;
   DBENCH_START();
 #ifdef SS_VER
@@ -882,6 +894,11 @@ void polyz_unpack(poly *r, const uint8_t *a) {
   trigger_low();
 #endif
   DBENCH_STOP(*tpack);
+#if defined(REJECT_FAULTS) && GAMMA1 == (1 << 17)
+  return i != N/4;
+#elif defined(REJECT_FAULTS) && GAMMA1 == (1 << 19)
+  return i != N/2;
+#endif
 }
 
 /*************************************************

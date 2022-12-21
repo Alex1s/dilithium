@@ -41,12 +41,23 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t no
     poly_uniform_eta(&v->vec[i], seed, nonce++);
 }
 
+#ifdef REJECT_FAULTS
+int polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
+  unsigned int i;
+
+  for(i = 0; i < L; ++i)
+    if(poly_uniform_gamma1(&v->vec[i], seed, L * nonce + i))
+      return 1;
+  return 0;
+}
+#else
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
 
   for(i = 0; i < L; ++i)
     poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
 }
+#endif
 
 void polyvecl_reduce(polyvecl *v) {
   unsigned int i;
