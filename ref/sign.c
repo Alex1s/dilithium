@@ -123,6 +123,9 @@ int crypto_sign_signature(uint8_t *sig,
   polyveck_ntt(&t0);
 
 rej:
+#ifdef SS_VER
+  trigger_low(); // if if-fault is unsuccessful; we land here
+#endif
 #ifdef REJECT_FAULTS
   /* Sample intermediate vector y and reject if a fault is detected */
   n = polyvecl_uniform_gamma1(&y, rhoprime, nonce++); // we can use n; up until here it is unused
@@ -132,7 +135,7 @@ rej:
   if(n)
     goto rej;
 #ifdef SS_VER
-    trigger_low(); // if if-fault is successful; we land here; if not, we eventually also land here
+    trigger_low(); // if if-fault is successful; we land here
 #endif
 #else
   /* Sample intermediate vector y */
