@@ -467,7 +467,7 @@ void poly_uniform_eta(poly *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 #define POLY_UNIFORM_GAMMA1_NBLOCKS ((POLYZ_PACKEDBYTES + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
-void poly_uniform_gamma1(poly *a,
+int poly_uniform_gamma1(poly *a,
                          const uint8_t seed[CRHBYTES],
                          uint16_t nonce)
 {
@@ -476,7 +476,7 @@ void poly_uniform_gamma1(poly *a,
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1_NBLOCKS, &state);
-  polyz_unpack(a, buf);
+  return polyz_unpack(a, buf);
 }
 
 /*************************************************
