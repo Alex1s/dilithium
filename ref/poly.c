@@ -5,7 +5,7 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "symmetric.h"
-#ifdef SS_VER
+#ifdef DO_TRIGGER
 #include "hal.h"
 #endif
 
@@ -830,7 +830,7 @@ void polyz_pack(uint8_t *r, const poly *a) {
 int polyz_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
   DBENCH_START();
-#ifdef SS_VER
+#ifdef DO_TRIGGER
   trigger_high();
 #endif
 
@@ -878,7 +878,7 @@ int polyz_unpack(poly *r, const uint8_t *a) {
   }
 #endif
 
-#ifdef SS_VER
+#ifdef DO_TRIGGER
   trigger_low();
 #endif
 #if GAMMA1 == (1 << 17)
