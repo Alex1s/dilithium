@@ -43,11 +43,11 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t no
 
 int polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
-  int fault_detected = 0;
 
   for(i = 0; i < L; ++i)
-    fault_detected |= poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
-  return fault_detected;
+    poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+
+  return 0;
 }
 
 void polyvecl_reduce(polyvecl *v) {
