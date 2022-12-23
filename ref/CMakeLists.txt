@@ -39,9 +39,14 @@ target_link_libraries(test_dilithium2aes_ref dilithium2aes_ref)
 target_link_libraries(test_vectors2aes_ref dilithium2aes_ref)
 target_link_libraries(test_shuffling2_ref dilithium2_ref)
 target_compile_options(test_dilithium2_ref_nolib PRIVATE -g)
+if(APPLE)
+target_compile_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=address)
+target_link_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=address)
+elseif(UNIX)
 target_compile_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=memory)
 target_compile_options(test_dilithium2_ref_nolib PRIVATE -fsanitize-memory-track-origins)
 target_link_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=memory)
+endif()
 
 
 # Dilithium 3
