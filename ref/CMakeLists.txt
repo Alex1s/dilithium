@@ -27,6 +27,7 @@ target_link_libraries(dilithium2_ref INTERFACE fips202_ref)
 target_link_libraries(dilithium2aes_ref INTERFACE fips202_ref aes256ctr_ref)
 
 add_executable(test_dilithium2_ref ${TEST_DILITHIUM_SRCS})
+add_executable(test_dilithium2_ref_nolib ${TEST_DILITHIUM_SRCS} ${DILITHIUM_FIPS202_SRCS} ${FIPS202_SRCS})
 add_executable(test_vectors2_ref ${TEST_VECTORS_SRCS})
 add_executable(test_dilithium2aes_ref ${TEST_DILITHIUM_SRCS})
 add_executable(test_vectors2aes_ref ${TEST_VECTORS_SRCS})
@@ -34,6 +35,10 @@ target_link_libraries(test_dilithium2_ref dilithium2_ref)
 target_link_libraries(test_vectors2_ref dilithium2_ref)
 target_link_libraries(test_dilithium2aes_ref dilithium2aes_ref)
 target_link_libraries(test_vectors2aes_ref dilithium2aes_ref)
+target_compile_options(test_dilithium2_ref_nolib PRIVATE -g)
+target_compile_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=memory)
+target_compile_options(test_dilithium2_ref_nolib PRIVATE -fsanitize-memory-track-origins)
+target_link_options(test_dilithium2_ref_nolib PRIVATE -fsanitize=memory)
 
 # Dilithium 3
 add_library(dilithium3_ref ${DILITHIUM_FIPS202_SRCS})
