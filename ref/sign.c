@@ -124,7 +124,9 @@ int crypto_sign_signature(uint8_t *sig,
 
 rej:
   /* Sample intermediate vector y */
-  polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
+  n = polyvecl_uniform_gamma1(&y, rhoprime, nonce++); // we can use n as it is not used yet
+  if(n)
+    goto rej;
 #ifdef SHUFFLE
   /* Shuffle intermediate vector y */
   polyvecl_shuffle(&y, rhoprime, nonce - 1); // exactly the same arguments as polyvecl_uniform_gamma1; is that a good seed and nonce? probably not ...
