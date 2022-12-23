@@ -73,6 +73,10 @@ void randombytes(uint8_t *out, size_t outlen) {
     shake256_squeeze(out, outlen, &pseudorandombytes_state);
   } else {
     ssize_t ret;
+    size_t i;
+
+    for(i=0; i < outlen; ++i)
+      out[i] = 0;
 
     while(outlen > 0) {
       ret = syscall(SYS_getrandom, out, outlen, 0);
