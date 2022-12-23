@@ -41,6 +41,10 @@ void randombytes(uint8_t *out, size_t outlen) {
 #elif defined(__linux__) && defined(SYS_getrandom)
 void randombytes(uint8_t *out, size_t outlen) {
   ssize_t ret;
+  size_t i;
+
+  for(i=0; i < outlen; ++i)
+   out[i] = 0;
 
   while(outlen > 0) {
     ret = syscall(SYS_getrandom, out, outlen, 0);
