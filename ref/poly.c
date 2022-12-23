@@ -5,6 +5,9 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "symmetric.h"
+#ifdef DO_TRIGGER
+#include "hal.h"
+#endif
 
 #ifdef DBENCH
 #include "test/cpucycles.h"
@@ -464,7 +467,7 @@ void poly_uniform_eta(poly *a,
 *              - uint16_t nonce: 16-bit nonce
 **************************************************/
 #define POLY_UNIFORM_GAMMA1_NBLOCKS ((POLYZ_PACKEDBYTES + STREAM256_BLOCKBYTES - 1)/STREAM256_BLOCKBYTES)
-void poly_uniform_gamma1(poly *a,
+int poly_uniform_gamma1(poly *a,
                          const uint8_t seed[CRHBYTES],
                          uint16_t nonce)
 {
@@ -473,7 +476,7 @@ void poly_uniform_gamma1(poly *a,
 
   stream256_init(&state, seed, nonce);
   stream256_squeezeblocks(buf, POLY_UNIFORM_GAMMA1_NBLOCKS, &state);
-  polyz_unpack(a, buf);
+  return polyz_unpack(a, buf);
 }
 
 /*************************************************
@@ -824,9 +827,12 @@ void polyz_pack(uint8_t *r, const poly *a) {
 * Arguments:   - poly *r: pointer to output polynomial
 *              - const uint8_t *a: byte array with bit-packed polynomial
 **************************************************/
-void polyz_unpack(poly *r, const uint8_t *a) {
+int polyz_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
   DBENCH_START();
+#ifdef DO_TRIGGER
+  trigger_high();
+#endif
 
 #if GAMMA1 == (1 << 17)
   for(i = 0; i < N/4; ++i) {
@@ -872,6 +878,14 @@ void polyz_unpack(poly *r, const uint8_t *a) {
   }
 #endif
 
+#ifdef DO_TRIGGER
+  trigger_low();
+#endif
+#if GAMMA1 == (1 << 17)
+  return i != N/4;
+#elif GAMMA1 == (1 << 19)
+  return i != N/2;
+#endif
   DBENCH_STOP(*tpack);
 }
 

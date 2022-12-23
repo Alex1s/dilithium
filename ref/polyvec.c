@@ -2,6 +2,7 @@
 #include "params.h"
 #include "polyvec.h"
 #include "poly.h"
+#include "symmetric.h"
 
 /*************************************************
 * Name:        expand_mat
@@ -40,11 +41,14 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t no
     poly_uniform_eta(&v->vec[i], seed, nonce++);
 }
 
-void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
+int polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
+  int fault_detected = 0;
 
   for(i = 0; i < L; ++i)
-    poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+    fault_detected |= poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+
+  return fault_detected;
 }
 
 void polyvecl_reduce(polyvecl *v) {
@@ -146,6 +150,72 @@ int polyvecl_chknorm(const polyvecl *v, int32_t bound)  {
 
   return 0;
 }
+
+#ifdef SHUFFLE
+static uint16_t rej_uint16(uint8_t *buf, unsigned int *i, stream256_state *state, uint16_t max) {
+  uint16_t res;
+  unsigned int shift;
+  uint16_t mask = 0;
+
+  // determine required number of random bits
+  for(shift = 16; shift-- > 0; ) { // 15, ..., 0
+    if(max & (1 << shift)) {
+      mask = (1 << (shift + 1)) - 1;
+      break;
+    }
+  }
+
+  // rejection sample
+  do {
+    if(max > 0xFF) {
+      if(*i >= STREAM256_BLOCKBYTES) {
+        stream256_squeezeblocks(buf, 1, state);
+        *i = 0;
+      }
+      res = buf[(*i)++] << 8;
+    } else {
+      res = 0;
+    }
+
+    if(*i >= STREAM256_BLOCKBYTES) {
+      stream256_squeezeblocks(buf, 1, state);
+      *i = 0;
+    }
+    res |= buf[(*i)++];
+
+    res &= mask;
+  } while(res > max);
+
+  return res;
+}
+
+void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
+  unsigned int current_poly_index, current_coeff_index, i = 0;
+  uint8_t random_poly_index, random_coeff_index;
+  uint16_t random_flattened_index;
+  int32_t tmp_random, tmp_current;
+  uint8_t buf[STREAM256_BLOCKBYTES];
+  stream256_state state;
+
+  stream256_init(&state, seed, nonce);
+  stream256_squeezeblocks(buf, 1, &state);
+
+  for(current_poly_index = L; current_poly_index-- > 0; ) { // L - 1, ..., 0
+    for(current_coeff_index = N; current_coeff_index-- > 0; ) { // N - 1, ..., 0
+      // sample
+      random_flattened_index = rej_uint16(buf, &i, &state, current_poly_index * N + current_coeff_index);
+      random_poly_index = random_flattened_index / N;
+      random_coeff_index = random_flattened_index % N;
+
+      // swap
+      tmp_random = v->vec[random_poly_index].coeffs[random_coeff_index];
+      tmp_current = v->vec[current_poly_index].coeffs[current_coeff_index];
+      v->vec[random_poly_index].coeffs[random_coeff_index] = tmp_current;
+      v->vec[current_poly_index].coeffs[current_coeff_index] = tmp_random;
+    }
+  }
+}
+#endif
 
 /**************************************************************/
 /************ Vectors of polynomials of length K **************/

@@ -14,7 +14,7 @@ typedef struct {
 void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
 #define polyvecl_uniform_gamma1 DILITHIUM_NAMESPACE(polyvecl_uniform_gamma1)
-void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
+int polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
 #define polyvecl_reduce DILITHIUM_NAMESPACE(polyvecl_reduce)
 void polyvecl_reduce(polyvecl *v);
@@ -33,6 +33,10 @@ void polyvecl_pointwise_poly_montgomery(polyvecl *r, const poly *a, const polyve
 void polyvecl_pointwise_acc_montgomery(poly *w,
                                        const polyvecl *u,
                                        const polyvecl *v);
+#ifdef SHUFFLE
+#define polyvecl_shuffle DILITHIUM_NAMESPACE(polyvecl_shuffle)
+void polyvecl_shuffle(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
+#endif
 
 
 #define polyvecl_chknorm DILITHIUM_NAMESPACE(polyvecl_chknorm)

@@ -87,7 +87,11 @@ int crypto_sign_signature(uint8_t *sig,
   uint8_t seedbuf[3*SEEDBYTES + 2*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
   uint16_t nonce = 0;
+#ifdef DO_TRIGGER
+  polyvecl mat[K], s1, y = {0}, z;
+#else
   polyvecl mat[K], s1, y, z;
+#endif
   polyveck t0, s2, w1, w0, h;
   poly cp;
   keccak_state state;
@@ -121,6 +125,10 @@ int crypto_sign_signature(uint8_t *sig,
 rej:
   /* Sample intermediate vector y */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
+#ifdef SHUFFLE
+  /* Shuffle intermediate vector y */
+  polyvecl_shuffle(&y, rhoprime, nonce - 1); // exactly the same arguments as polyvecl_uniform_gamma1; is that a good seed and nonce? probably not ...
+#endif
 
   /* Matrix-vector multiplication */
   z = y;
