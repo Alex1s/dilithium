@@ -52,7 +52,7 @@ void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t
 
   fault_data.do_fault = 0;
     for(i = 0; i < L; ++i) {
-        if (do_fault)
+        if (do_fault && fault_data.polyvec_i == i)
             fault_data.do_fault = 1;
         poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
         fault_data.do_fault = 0;
