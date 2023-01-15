@@ -4,6 +4,10 @@
 #include "poly.h"
 #include "symmetric.h"
 
+#ifndef SS_VER
+#include "fault_sim.h"
+#endif
+
 /*************************************************
 * Name:        expand_mat
 *
@@ -43,9 +47,23 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t no
 
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
+#ifndef SS_VER
+  int do_fault = fault_data.do_fault;
+
+  fault_data.do_fault = 0;
+    for(i = 0; i < L; ++i) {
+        if (do_fault && fault_data.polyvec_i == i)
+            fault_data.do_fault = 1;
+        poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+        if (do_fault && fault_data.polyvec_i == i)
+            fault_data.do_fault = 0;
+    }
+    fault_data.do_fault = 0;
+#else
 
   for(i = 0; i < L; ++i)
     poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+#endif
 }
 
 void polyvecl_reduce(polyvecl *v) {

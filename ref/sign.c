@@ -8,6 +8,11 @@
 #include "symmetric.h"
 #include "fips202.h"
 
+#ifndef SS_VER
+#include "fault_sim.h"
+struct fault_dat fault_data = {0, 0, 0, 0};
+#endif
+
 /*************************************************
 * Name:        crypto_sign_keypair
 *
@@ -184,6 +189,31 @@ rej:
   *siglen = CRYPTO_BYTES;
   return 0;
 }
+
+#ifndef SS_VER
+int crypto_sign_signature_faulted(uint8_t *sig,
+                          size_t *siglen,
+                          const uint8_t *m,
+                          size_t mlen,
+                          const uint8_t *sk,
+                          unsigned int polyvec_i,
+                          unsigned int poly_i)
+{
+    int num_rejections;
+
+    fault_data.do_fault = 1;
+    fault_data.polyvec_i = polyvec_i;
+    fault_data.poly_i = poly_i;
+
+    crypto_sign_signature(sig, siglen, m, mlen,  sk);
+    num_rejections = fault_data.num_rejections;
+
+    fault_data.do_fault = 0;
+    fault_data.polyvec_i = fault_data.poly_i = fault_data.num_rejections = 0;
+
+    return num_rejections;
+}
+#endif//SS_VER
 
 /*************************************************
 * Name:        crypto_sign

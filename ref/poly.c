@@ -20,6 +20,10 @@ extern uint64_t *tred, *tadd, *tmul, *tround, *tsample, *tpack;
 #define DBENCH_STOP(t)
 #endif
 
+#ifndef SS_VER
+#include "fault_sim.h"
+#endif//SS_VER
+
 /*************************************************
 * Name:        poly_reduce
 *
@@ -860,6 +864,11 @@ void polyz_unpack(poly *r, const uint8_t *a) {
     r->coeffs[4*i+1] = GAMMA1 - r->coeffs[4*i+1];
     r->coeffs[4*i+2] = GAMMA1 - r->coeffs[4*i+2];
     r->coeffs[4*i+3] = GAMMA1 - r->coeffs[4*i+3];
+
+#ifndef SS_VER
+    if (fault_data.do_fault && fault_data.poly_i == i)
+        break;
+#endif//SS_VER
   }
 #elif GAMMA1 == (1 << 19)
   for(i = 0; i < N/2; ++i) {
@@ -875,6 +884,11 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 
     r->coeffs[2*i+0] = GAMMA1 - r->coeffs[2*i+0];
     r->coeffs[2*i+1] = GAMMA1 - r->coeffs[2*i+1];
+
+#ifndef SS_VER
+    if (fault_data.do_fault && fault_data.poly_i == i)
+        break;
+#endif//SS_VER
   }
 #endif
 
