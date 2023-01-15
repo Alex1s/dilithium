@@ -128,6 +128,9 @@ int crypto_sign_signature(uint8_t *sig,
   polyveck_ntt(&t0);
 
 rej:
+#ifndef SS_VER
+    fault_data.num_rejections++;
+#endif//SS_VER
   /* Sample intermediate vector y */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 #ifdef SHUFFLE
@@ -204,12 +207,12 @@ int crypto_sign_signature_faulted(uint8_t *sig,
     fault_data.do_fault = 1;
     fault_data.polyvec_i = polyvec_i;
     fault_data.poly_i = poly_i;
+    fault_data.num_rejections = -1;
 
     crypto_sign_signature(sig, siglen, m, mlen,  sk);
     num_rejections = fault_data.num_rejections;
 
     fault_data.do_fault = 0;
-    fault_data.polyvec_i = fault_data.poly_i = fault_data.num_rejections = 0;
 
     return num_rejections;
 }
