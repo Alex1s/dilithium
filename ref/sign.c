@@ -92,11 +92,7 @@ int crypto_sign_signature(uint8_t *sig,
   uint8_t seedbuf[3*SEEDBYTES + 2*CRHBYTES];
   uint8_t *rho, *tr, *key, *mu, *rhoprime;
   uint16_t nonce = 0;
-#ifdef SS_VER
   polyvecl mat[K], s1, y = {0}, z;
-#else
-  polyvecl mat[K], s1, y, z;
-#endif
   polyveck t0, s2, w1, w0, h;
   poly cp;
   keccak_state state;

@@ -120,7 +120,13 @@ int main(void)
       uint8_t sig[CRYPTO_BYTES];
       size_t siglen;
       uint8_t m[1] = {num + 2};
-      int rej_count = crypto_sign_signature_faulted(sig, &siglen, m, 1, sk, 1, 10);
+      int rej_count;
+      if(num == 9) {
+        rej_count = -1;
+        crypto_sign_signature(sig, &siglen, m, 1, sk);
+      } else {
+        rej_count = crypto_sign_signature_faulted(sig, &siglen, m, 1, sk, 1, 10);
+      }
 
 
       uint8_t c[SEEDBYTES];
@@ -132,9 +138,8 @@ int main(void)
           for(int j_c = 0; j_c < N; ++j_c)
               if((z.vec[i_c].coeffs[j_c] < 0 && z.vec[i_c].coeffs[j_c] >= -BETA) || (z.vec[i_c].coeffs[j_c] >= 0 && z.vec[i_c].coeffs[j_c] <= BETA))
                   num_beta++;
-      printf("Successfully ran signature_faulted (%d, %d).\n", rej_count, num_beta);
+      printf("Successfully ran signature_faulted of message m = %d: (%d, %d).\n", num, rej_count, num_beta);
 
-      if (rej_count == 0)
-        print_polyvecl(&z);
+      print_polyvecl(&z);
   }
 }
