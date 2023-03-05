@@ -1,3 +1,7 @@
+#ifdef SS_VER
+#include "hal.h"
+#include "../../../hal/stm32f4/stm32f4xx_hal_flash.h"
+#endif
 #include <stdint.h>
 #include "params.h"
 #include "poly.h"
@@ -5,9 +9,6 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "symmetric.h"
-#ifdef SS_VER
-#include "hal.h"
-#endif
 
 #ifdef DBENCH
 #include "test/cpucycles.h"
@@ -835,6 +836,12 @@ void polyz_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
   DBENCH_START();
 #ifdef SS_VER
+  __HAL_FLASH_DATA_CACHE_DISABLE();
+  __HAL_FLASH_DATA_CACHE_RESET();
+
+  __HAL_FLASH_INSTRUCTION_CACHE_DISABLE();
+  __HAL_FLASH_INSTRUCTION_CACHE_RESET();
+
   trigger_high();
 #endif
 
@@ -894,6 +901,12 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 
 #ifdef SS_VER
   trigger_low();
+
+  __HAL_FLASH_DATA_CACHE_RESET();
+  __HAL_FLASH_DATA_CACHE_ENABLE();
+
+  __HAL_FLASH_INSTRUCTION_CACHE_RESET();
+  __HAL_FLASH_INSTRUCTION_CACHE_ENABLE();
 #endif
   DBENCH_STOP(*tpack);
 }
