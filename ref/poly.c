@@ -834,6 +834,10 @@ void polyz_pack(uint8_t *r, const poly *a) {
 **************************************************/
 void polyz_unpack(poly *r, const uint8_t *a) {
   unsigned int i;
+  // save these registers for use in inline assembly for fast triggering
+  register volatile int gpioa_base_address asm("r11");
+  register volatile int set_gpio12_bsrr_value asm("r10");
+  register volatile int reset_gpio12_bsrr_value asm("r12");
   DBENCH_START();
 #ifdef SS_VER
   __HAL_FLASH_DATA_CACHE_DISABLE();
@@ -842,11 +846,19 @@ void polyz_unpack(poly *r, const uint8_t *a) {
   __HAL_FLASH_INSTRUCTION_CACHE_DISABLE();
   __HAL_FLASH_INSTRUCTION_CACHE_RESET();
 
-  trigger_high();
+  // setup fast triggering
+  __asm__ __volatile__("ldr r11, =0x40020000\n\t" // GPIOA
+                       "ldr r10, =0x1000\n\t" // BSRR: set GPIO12
+                       "ldr r12, =0x10000000\n\t" // BSRR: reset GPIO12
+  );
 #endif
 
 #if GAMMA1 == (1 << 17)
   for(i = 0; i < N/4; ++i) {
+#ifdef SS_VER
+    __asm__ __volatile__("str r12, [r11, #24]\n\t" // reset GPIO12; 24 is the offset to the BSRR register
+    );
+#endif
     r->coeffs[4*i+0]  = a[9*i+0];
     r->coeffs[4*i+0] |= (uint32_t)a[9*i+1] << 8;
     r->coeffs[4*i+0] |= (uint32_t)a[9*i+2] << 16;
@@ -876,6 +888,10 @@ void polyz_unpack(poly *r, const uint8_t *a) {
     if (fault_data.do_fault && fault_data.poly_i == i)
         break;
 #endif//SS_VER
+#ifdef SS_VER
+    __asm__ __volatile__("str r10, [r11, #24]\n\t" // set GPIO12; 24 is the offset to the BSRR register
+    );
+#endif//SS_VER
   }
 #elif GAMMA1 == (1 << 19)
   for(i = 0; i < N/2; ++i) {
@@ -900,7 +916,8 @@ void polyz_unpack(poly *r, const uint8_t *a) {
 #endif
 
 #ifdef SS_VER
-  trigger_low();
+    __asm__ __volatile__("str r12, [r11, #24]\n\t" // reset GPIO12; 24 is the offset to the BSRR register
+    );
 
   __HAL_FLASH_DATA_CACHE_RESET();
   __HAL_FLASH_DATA_CACHE_ENABLE();
